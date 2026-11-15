@@ -42,7 +42,7 @@
     border-radius: 10px;
     overflow: hidden;
   }
-  .btn {
+  .btn, select {
     display: inline-block;
     padding: 12px 18px;
     background: #8068e9;
@@ -54,12 +54,18 @@
     cursor: pointer;
     margin: 5px 6px 5px 0;
   }
+  select {
+    background: #0b1426;
+    border: 1px solid #394568;
+    font-weight: normal;
+  }
   .btn:disabled { background: #394568; color: #8892b0; cursor: not-allowed; }
   #reset { background: #e05668; display: none; }
   input[type="file"] { display: none; }
   #status { font-size: 13px; color: #83e7bc; margin: 10px 0 0; }
   #warning { font-size: 13px; color: #ffb86c; display: none; margin: 6px 0; }
   .legal-row { display: block; padding: 8px 0; font-size: 14px; cursor: pointer; }
+  .core-row { margin: 8px 0; font-size: 14px; }
   .notice {
     background: #0b1426;
     border: 1px solid #394568;
@@ -72,7 +78,7 @@
   @media (max-width: 600px) {
     main { padding: 8px; }
     #game { height: 60vh; min-height: 280px; }
-    .btn { width: 100%; text-align: center; margin: 5px 0; }
+    .btn, select { width: 100%; text-align: center; margin: 5px 0; }
   }
 </style>
 </head>
@@ -97,6 +103,16 @@
     <p id="filename">No game selected</p>
     <p id="warning"></p>
 
+    <div class="core-row">
+      <label for="coreSelect">SNES Core Engine: </label>
+      <select id="coreSelect">
+        <option value="snes9x2010">snes9x 2010 (Recommended for iPad/iOS)</option>
+        <option value="snes9x2005">snes9x 2005 (Fast / Lightweight)</option>
+        <option value="bsnes">bsnes (High Accuracy)</option>
+        <option value="snes">Default SNES</option>
+      </select>
+    </div>
+
     <label class="legal-row">
       <input type="checkbox" id="legal">
       I confirm I legally own this ROM or have permission to use it.
@@ -117,6 +133,7 @@
   const play = document.getElementById("play");
   const reset = document.getElementById("reset");
   const pickBtn = document.getElementById("pickBtn");
+  const coreSelect = document.getElementById("coreSelect");
   const status = document.getElementById("status");
   const filename = document.getElementById("filename");
   const warning = document.getElementById("warning");
@@ -156,19 +173,18 @@
     running = true;
     syncButtons();
     pickBtn.style.display = "none";
+    coreSelect.disabled = true;
     reset.style.display = "inline-block";
-    status.textContent = "Starting SNES core engine...";
+    status.textContent = "Downloading " + coreSelect.value + " core...";
 
     if (romUrl) URL.revokeObjectURL(romUrl);
     romUrl = URL.createObjectURL(rom.files[0]);
 
-    // Stable snes9x core configuration for GitHub Pages and iPad Safari
     window.EJS_player = "#game";
-    window.EJS_core = "snes9x";
+    window.EJS_core = coreSelect.value;
     window.EJS_gameUrl = romUrl;
     window.EJS_gameName = rom.files[0].name.replace(/\.[^/.]+$/, "");
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-    window.EJS_threads = false;
     window.EJS_color = "#8068e9";
 
     const script = document.createElement("script");
@@ -180,6 +196,7 @@
       status.textContent = "Failed to load core. Check your internet connection and refresh.";
       running = false;
       pickBtn.style.display = "inline-block";
+      coreSelect.disabled = false;
       reset.style.display = "none";
       syncButtons();
     };
