@@ -86,7 +86,7 @@
 
 <header>
   <h1>JCSNES EMU</h1>
-  <p>SUPER NINTENDO EMULATOR</p>
+  <p>SUPER NINTENDO EMULATOR (v3)</p>
 </header>
 
 <main>
@@ -106,10 +106,8 @@
     <div class="core-row">
       <label for="coreSelect">SNES Core Engine: </label>
       <select id="coreSelect">
-        <option value="snes9x2010">snes9x 2010 (Recommended for iPad/iOS)</option>
-        <option value="snes9x2005">snes9x 2005 (Fast / Lightweight)</option>
-        <option value="bsnes">bsnes (High Accuracy)</option>
-        <option value="snes">Default SNES</option>
+        <option value="bsnes">bsnes (Try this first)</option>
+        <option value="snes9x">snes9x</option>
       </select>
     </div>
 
@@ -184,11 +182,12 @@
     window.EJS_core = coreSelect.value;
     window.EJS_gameUrl = romUrl;
     window.EJS_gameName = rom.files[0].name.replace(/\.[^/.]+$/, "");
-    window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    window.EJS_pathtodata = "https://cdn.emulatorjs.org/4.2.1/data/";
+    window.EJS_disableDatabases = true;
     window.EJS_color = "#8068e9";
 
     const script = document.createElement("script");
-    script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    script.src = "https://cdn.emulatorjs.org/4.2.1/data/loader.js";
     script.onload = () => {
       status.textContent = "Core loaded! Tap Play inside the screen to start.";
     };
