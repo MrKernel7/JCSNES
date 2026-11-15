@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JCSNES EMU</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #090b16;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  }
+  header {
+    text-align: center;
+    padding: 18px;
+    background: #121a30;
+    border-bottom: 1px solid #394568;
+  }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 5vw, 38px);
+    letter-spacing: 3px;
+    color: #a991ff;
+  }
+  header p { margin: 6px 0 0; color: #aab4d0; font-size: 12px; }
+  main { max-width: 1000px; margin: auto; padding: 15px; }
+  .panel {
+    background: #151c30;
+    border: 1px solid #394568;
+    border-radius: 14px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  .panel h3 { margin-top: 0; font-size: 15px; letter-spacing: 1px; color: #d6dcff; }
+  #game {
+    width: 100%;
+    height: 68vh;
+    min-height: 320px;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .btn {
+    display: inline-block;
+    padding: 12px 18px;
+    background: #8068e9;
+    color: #fff;
+    border: 0;
+    border-radius: 9px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 5px 6px 5px 0;
+  }
+  .btn:disabled { background: #394568; color: #8892b0; cursor: not-allowed; }
+  #reset { background: #e05668; display: none; }
+  input[type="file"] { display: none; }
+  #status { font-size: 13px; color: #83e7bc; margin: 10px 0 0; }
+  #warning { font-size: 13px; color: #ffb86c; display: none; margin: 6px 0; }
+  .legal-row { display: block; padding: 8px 0; font-size: 14px; cursor: pointer; }
+  .notice {
+    background: #0b1426;
+    border: 1px solid #394568;
+    padding: 12px;
+    border-radius: 10px;
+    color: #c5cce0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  @media (max-width: 600px) {
+    main { padding: 8px; }
+    #game { height: 60vh; min-height: 280px; }
+    .btn { width: 100%; text-align: center; margin: 5px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>JCSNES EMU</h1>
+  <p>SUPER NINTENDO EMULATOR</p>
+</header>
+
+<main>
+  <div class="panel">
+    <h3>GAME SCREEN</h3>
+    <div id="game"></div>
+    <p id="status">Choose a ROM file below to begin.</p>
+  </div>
+
+  <div class="panel">
+    <h3>GAME LIBRARY</h3>
+    <label for="rom" class="btn" id="pickBtn">CHOOSE SNES ROM</label>
+    <input id="rom" type="file">
+    <p id="filename">No game selected</p>
+    <p id="warning"></p>
+
+    <label class="legal-row">
+      <input type="checkbox" id="legal">
+      I confirm I legally own this ROM or have permission to use it.
+    </label>
+
+    <button class="btn" id="play" disabled>START GAME</button>
+    <button class="btn" id="reset">LOAD DIFFERENT GAME</button>
+  </div>
+
+  <div class="notice">
+    <b>LEGAL NOTICE:</b> No copyrighted Nintendo ROMs are supplied. Only use ROM files you legally own or have permission to use.
+  </div>
+</main>
+
+<script>
+  const rom = document.getElementById("rom");
+  const legal = document.getElementById("legal");
+  const play = document.getElementById("play");
+  const reset = document.getElementById("reset");
+  const pickBtn = document.getElementById("pickBtn");
+  const status = document.getElementById("status");
+  const filename = document.getElementById("filename");
+  const warning = document.getElementById("warning");
+
+  const allowed = [".smc", ".sfc", ".swc", ".fig", ".zip"];
+  let romUrl = null;
+  let validFile = false;
+  let running = false;
+
+  function syncButtons() {
+    play.disabled = !(validFile && legal.checked && !running);
+  }
+
+  rom.addEventListener("change", () => {
+    const file = rom.files[0];
+    if (!file) {
+      filename.textContent = "No game selected";
+      warning.style.display = "none";
+      validFile = false;
+      syncButtons();
+      return;
+    }
+
+    filename.textContent = file.name;
+    const ok = allowed.some(ext => file.name.toLowerCase().endsWith(ext));
+    warning.textContent = ok ? "" : "Invalid file. Pick a .smc, .sfc, .swc, .fig, or .zip file.";
+    warning.style.display = ok ? "none" : "block";
+    validFile = ok;
+    syncButtons();
+  });
+
+  legal.addEventListener("change", syncButtons);
+
+  play.addEventListener("click", () => {
+    if (!validFile || !legal.checked || running) return;
+
+    running = true;
+    syncButtons();
+    pickBtn.style.display = "none";
+    reset.style.display = "inline-block";
+    status.textContent = "Starting SNES core engine...";
+
+    if (romUrl) URL.revokeObjectURL(romUrl);
+    romUrl = URL.createObjectURL(rom.files[0]);
+
+    // Stable snes9x core configuration for GitHub Pages and iPad Safari
+    window.EJS_player = "#game";
+    window.EJS_core = "snes9x";
+    window.EJS_gameUrl = romUrl;
+    window.EJS_gameName = rom.files[0].name.replace(/\.[^/.]+$/, "");
+    window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    window.EJS_threads = false;
+    window.EJS_color = "#8068e9";
+
+    const script = document.createElement("script");
+    script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    script.onload = () => {
+      status.textContent = "Core loaded! Tap Play inside the screen to start.";
+    };
+    script.onerror = () => {
+      status.textContent = "Failed to load core. Check your internet connection and refresh.";
+      running = false;
+      pickBtn.style.display = "inline-block";
+      reset.style.display = "none";
+      syncButtons();
+    };
+    document.body.appendChild(script);
+  });
+
+  reset.addEventListener("click", () => {
+    if (romUrl) URL.revokeObjectURL(romUrl);
+    location.reload();
+  });
+</script>
+</body>
+</html>
